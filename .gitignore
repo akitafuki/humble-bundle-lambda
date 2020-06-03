@@ -1,0 +1,11 @@
+#compiled files
+main
+main.zip
+
+#Because mac
+.DS_Store
+
+#vscode
+.project
+.settings
+.classpath
