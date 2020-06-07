@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"regexp"
 	"time"
 
@@ -21,6 +22,10 @@ func FindGameBundle(category []string, bundle string) bool {
 		}
 	}
 	return false
+}
+
+func getEnvVariable(key string) string {
+	return os.Getenv(key)
 }
 
 func HandleLambdaEvent() error {
@@ -47,9 +52,9 @@ func HandleLambdaEvent() error {
 			SQLStatement := fmt.Sprintf(`SELECT %s FROM HumbleBundlePosts;`, s[1])
 
 			req, resp := svc.ExecuteStatementRequest(&rdsdataservice.ExecuteStatementInput{
-				Database:    aws.String("akitafuki"),
-				ResourceArn: aws.String("arn:aws:rds:us-west-2:934040383244:cluster:humblebundle"),
-				SecretArn:   aws.String("arn:aws:secretsmanager:us-west-2:934040383244:secret:humblebundle-OQp5wy"),
+				Database:    aws.String(getEnvVariable("DB_NAME")),
+				ResourceArn: aws.String(getEnvVariable("DB_RESOURCE_ARN")),
+				SecretArn:   aws.String(getEnvVariable("DB_SECRETS_ARN")),
 				Sql:         aws.String(SQLStatement),
 			})
 
@@ -62,6 +67,7 @@ func HandleLambdaEvent() error {
 
 			if len(resp.Records) == 0 {
 				log.Println("post not found")
+
 			}
 		}
 	}
