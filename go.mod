@@ -1,6 +1,6 @@
 module akitafuki/main
 
-go 1.18
+go 1.19
 
 require (
 	github.com/aws/aws-lambda-go v1.32.0
