@@ -34,7 +34,7 @@ func HandleLambdaEvent() error {
 		fmt.Println("Something went wrong:", err)
 	})
 
-	c.OnHTML("info-section", func(e *colly.HTMLElement) {
+	c.OnHTML("div.info-section", func(e *colly.HTMLElement) {
 		temp := item{}
 		temp.URL = e.Attr("href")
 		temp.Title = e.ChildText("span")
@@ -42,7 +42,7 @@ func HandleLambdaEvent() error {
 		posts = append(posts, temp)
 		log.Println(temp)
 	})
-	
+
 	c.OnRequest(func(r *colly.Request) {
 		fmt.Println("Visiting", r.URL)
 	})
