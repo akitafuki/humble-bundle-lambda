@@ -2,7 +2,7 @@ name: deploy to lambda
 on:
   push:
     branches:
-      - main
+      - master
 jobs:
   deploy_zip:
     name: deploy lambda function
