@@ -20,19 +20,16 @@ func FindGameBundle(category []string, bundle string) bool {
 	return false
 }
 
-func getEnvVariable(key string) string {
-	return os.Getenv(key)
-}
-
 func HandleLambdaEvent() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	fp := gofeed.NewParser()
-	feed, _ := fp.ParseURLWithContext("https://blog.humblebundle.com/feed/", ctx)
+	feed, _ := fp.ParseURLWithContext(os.Getenv("RSS_FEED_URL"), ctx)
 
 	r := regexp.MustCompile(`/?\?p=(?P<postid>\d{4,5})`)
 
 	for _, item := range feed.Items {
+		log.Println(item)
 		c := item.Categories
 		if FindGameBundle(c, "Game Bundle") {
 			log.Println(item.Title)
