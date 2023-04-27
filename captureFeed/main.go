@@ -1,14 +1,12 @@
 package main
 
 import (
-	"context"
+	"fmt"
+	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/gocolly/colly/v2"
 	"log"
 	"os"
-	"regexp"
 	"time"
-
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/mmcdole/gofeed"
 )
 
 func FindGameBundle(category []string, bundle string) bool {
@@ -20,25 +18,32 @@ func FindGameBundle(category []string, bundle string) bool {
 	return false
 }
 
+type item struct {
+	URL       string
+	Title     string
+	CrawledAt time.Time
+}
+
 func HandleLambdaEvent() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	fp := gofeed.NewParser()
-	feed, _ := fp.ParseURLWithContext(os.Getenv("RSS_FEED_URL"), ctx)
+	posts := []item{}
 
-	r := regexp.MustCompile(`/?\?p=(?P<postid>\d{4,5})`)
+	// Instantiate default collector
+	c := colly.NewCollector()
 
-	for _, item := range feed.Items {
-		log.Println(item)
-		c := item.Categories
-		if FindGameBundle(c, "Game Bundle") {
-			log.Println(item.Title)
-			log.Println(item.Link)
+	c.OnError(func(_ *colly.Response, err error) {
+		fmt.Println("Something went wrong:", err)
+	})
 
-			s := r.FindStringSubmatch(item.GUID)
-			log.Println(s[1])
-		}
-	}
+	c.OnHTML("info-section", func(e *colly.HTMLElement) {
+		temp := item{}
+		temp.URL = e.Attr("href")
+		temp.Title = e.ChildText("span")
+		temp.CrawledAt = time.Now()
+		posts = append(posts, temp)
+		log.Println(temp)
+	})
+
+	c.Visit(os.Getenv("RSS_FEED_URL"))
 
 	return nil
 }
