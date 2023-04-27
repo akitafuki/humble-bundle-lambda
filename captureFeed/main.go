@@ -42,6 +42,10 @@ func HandleLambdaEvent() error {
 		posts = append(posts, temp)
 		log.Println(temp)
 	})
+	
+	c.OnRequest(func(r *colly.Request) {
+		fmt.Println("Visiting", r.URL)
+	})
 
 	c.Visit(os.Getenv("RSS_FEED_URL"))
 
