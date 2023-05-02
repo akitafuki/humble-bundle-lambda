@@ -83,6 +83,8 @@ func HandleLambdaEvent() error {
 		return err
 	}
 
+	fmt.Println(av)
+
 	// Create a PutItemInput object.
 	putItemInput := &dynamodb.PutItemInput{
 		TableName: aws.String("humble-data"),
