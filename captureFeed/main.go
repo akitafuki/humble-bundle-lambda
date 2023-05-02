@@ -15,9 +15,9 @@ import (
 )
 
 type bundle struct {
-	URL       string
-	Title     string
-	CrawledAt time.Time
+	URL       string    `json:"url"`
+	Title     string    `json:"title"`
+	CrawledAt time.Time `json:"crawledat"`
 }
 
 func HandleLambdaEvent() error {
