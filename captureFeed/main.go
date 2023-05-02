@@ -21,7 +21,17 @@ type Bundle struct {
 }
 
 func HandleLambdaEvent() error {
-	var bundles []Bundle
+	// Create a session.
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("us-east-1"),
+	})
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	// Create a DynamoDB client.
+	svc := dynamodb.New(sess)
 
 	// Instantiate default collector
 	c := colly.NewCollector()
@@ -48,7 +58,23 @@ func HandleLambdaEvent() error {
 			newBundle.Title = record.(map[string]interface{})["tile_name"].(string)
 			newBundle.CrawledAt = time.Now()
 
-			bundles = append(bundles, newBundle)
+			av, err := dynamodbattribute.MarshalMap(newBundle)
+			if err != nil {
+				fmt.Println(fmt.Println(err))
+			}
+
+			// Create a PutItemInput object.
+			putItemInput := &dynamodb.PutItemInput{
+				TableName: aws.String("humble-data"),
+				Item:      av,
+			}
+
+			// Call the PutItem method of the DynamoDB client.
+			_, err = svc.PutItem(putItemInput)
+
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
 	})
 
@@ -56,43 +82,7 @@ func HandleLambdaEvent() error {
 		fmt.Println("Visiting", r.URL)
 	})
 
-	err := c.Visit(os.Getenv("RSS_FEED_URL"))
-
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	fmt.Println(bundles)
-
-	// Create a session.
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-east-1"),
-	})
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	// Create a DynamoDB client.
-	svc := dynamodb.New(sess)
-
-	av, err := dynamodbattribute.MarshalMap(bundles)
-	if err != nil {
-		fmt.Println(fmt.Println(err))
-		return err
-	}
-
-	fmt.Println(av)
-
-	// Create a PutItemInput object.
-	putItemInput := &dynamodb.PutItemInput{
-		TableName: aws.String("humble-data"),
-		Item:      av,
-	}
-
-	// Call the PutItem method of the DynamoDB client.
-	_, err = svc.PutItem(putItemInput)
+	err = c.Visit(os.Getenv("RSS_FEED_URL"))
 
 	if err != nil {
 		fmt.Println(err)
