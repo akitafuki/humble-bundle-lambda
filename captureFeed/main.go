@@ -14,14 +14,14 @@ import (
 	"time"
 )
 
-type bundle struct {
+type Bundle struct {
 	URL       string    `json:"url"`
 	Title     string    `json:"title"`
 	CrawledAt time.Time `json:"crawledat"`
 }
 
 func HandleLambdaEvent() error {
-	bundles := []bundle{}
+	var bundles []Bundle
 
 	// Instantiate default collector
 	c := colly.NewCollector()
@@ -42,7 +42,7 @@ func HandleLambdaEvent() error {
 		var products = js["data"].(map[string]interface{})["games"].(map[string]interface{})["mosaic"].([]interface{})[0].(map[string]interface{})["products"]
 
 		for _, record := range products.([]interface{}) {
-			var newBundle bundle
+			var newBundle Bundle
 
 			newBundle.URL = record.(map[string]interface{})["product_url"].(string)
 			newBundle.Title = record.(map[string]interface{})["tile_name"].(string)
