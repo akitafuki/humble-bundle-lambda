@@ -63,6 +63,8 @@ func HandleLambdaEvent() error {
 		return err
 	}
 
+	fmt.Println(bundles)
+
 	// Create a session.
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String("us-east-1"),
