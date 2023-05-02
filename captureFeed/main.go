@@ -15,9 +15,9 @@ import (
 )
 
 type Bundle struct {
-	URL       string    `json:"url"`
-	Title     string    `json:"title"`
-	CrawledAt time.Time `json:"crawledat"`
+	URL       string    `dynamodbav:"url"`
+	Title     string    `dynamodbav:"title"`
+	CrawledAt time.Time `dynamodbav:"crawledat"`
 }
 
 func HandleLambdaEvent() error {
