@@ -18,6 +18,7 @@ type Bundle struct {
 	URL       string    `dynamodbav:"url"`
 	Title     string    `dynamodbav:"title"`
 	CrawledAt time.Time `dynamodbav:"crawledat"`
+	EndDate   time.Time `dynamodbav:"enddate"`
 }
 
 func HandleLambdaEvent() error {
@@ -57,6 +58,7 @@ func HandleLambdaEvent() error {
 			newBundle.URL = record.(map[string]interface{})["product_url"].(string)
 			newBundle.Title = record.(map[string]interface{})["tile_name"].(string)
 			newBundle.CrawledAt = time.Now()
+			newBundle.EndDate, _ = time.Parse(time.RFC3339, record.(map[string]interface{})["end_date|datetime"].(string))
 
 			av, err := dynamodbattribute.MarshalMap(newBundle)
 			if err != nil {
