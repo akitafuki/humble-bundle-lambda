@@ -57,7 +57,7 @@ func HandleLambdaEvent() error {
 
 			newBundle.URL = record.(map[string]interface{})["product_url"].(string)
 			newBundle.Title = record.(map[string]interface{})["tile_name"].(string)
-			newBundle.CrawledAt = time.Now().Format(time.RFC3339)
+			newBundle.CrawledAt = time.Now().Format("2006-01-02T15:04:05")
 			newBundle.EndDate = record.(map[string]interface{})["end_date|datetime"].(string)
 
 			av, err := dynamodbattribute.MarshalMap(newBundle)
