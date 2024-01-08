@@ -17,6 +17,7 @@ import (
 type Bundle struct {
 	URL       string `dynamodbav:"url"`
 	Title     string `dynamodbav:"title"`
+	ImageTile string `dynamodbav:"imagetile"`
 	CrawledAt string `dynamodbav:"crawledat"`
 	EndDate   string `dynamodbav:"enddate"`
 }
@@ -57,6 +58,7 @@ func HandleLambdaEvent() error {
 
 			newBundle.URL = record.(map[string]interface{})["product_url"].(string)
 			newBundle.Title = record.(map[string]interface{})["tile_name"].(string)
+			newBundle.ImageTile = record.(map[string]interface{})["high_res_tile_image"].(string)
 			newBundle.CrawledAt = time.Now().Format("2006-01-02T15:04:05")
 			newBundle.EndDate = record.(map[string]interface{})["end_date|datetime"].(string)
 
