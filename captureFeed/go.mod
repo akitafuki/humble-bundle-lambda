@@ -1,6 +1,6 @@
 module captureFeed
 
-go 1.23.0
+go 1.23
 
 toolchain go1.25.3
 
