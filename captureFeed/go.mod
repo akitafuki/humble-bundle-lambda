@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.25.5
 
 require (
-	github.com/aws/aws-lambda-go v1.50.0
+	github.com/aws/aws-lambda-go v1.51.0
 	github.com/aws/aws-sdk-go v1.55.8
 	github.com/gocolly/colly/v2 v2.3.0
 )
