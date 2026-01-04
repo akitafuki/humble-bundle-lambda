@@ -1,95 +1,86 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/gocolly/colly/v2"
 	"os"
 	"time"
+
+	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/gocolly/colly/v2"
 )
 
-type Bundle struct {
-	URL       string `dynamodbav:"url"`
-	Title     string `dynamodbav:"title"`
-	ImageTile string `dynamodbav:"imagetile"`
-	CrawledAt string `dynamodbav:"crawledat"`
-	EndDate   string `dynamodbav:"enddate"`
-}
+func HandleLambdaEvent(ctx context.Context) error {
+	// Check for required environment variables
+	bucketName := os.Getenv("SALESBUNDLES_BUCKET_NAME")
+	if bucketName == "" {
+		return errors.New("SALESBUNDLES_BUCKET_NAME environment variable is not set")
+	}
 
-func HandleLambdaEvent() error {
-	// Create a session.
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-east-1"),
-	})
+	feedURL := os.Getenv("RSS_FEED_URL")
+	if feedURL == "" {
+		return errors.New("RSS_FEED_URL environment variable is not set")
+	}
+
+	// Load the Shared AWS Configuration.
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-1"))
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Error loading config:", err)
 		return err
 	}
 
-	// Create a DynamoDB client.
-	svc := dynamodb.New(sess)
+	// Create an S3 client.
+	svc := s3.NewFromConfig(cfg)
 
 	// Instantiate default collector
 	c := colly.NewCollector()
 
 	c.OnError(func(_ *colly.Response, err error) {
-		fmt.Println("Something went wrong:", err)
+		fmt.Println("Something went wrong with the collector:", err)
 	})
 
 	c.OnHTML("script#landingPage-json-data", func(e *colly.HTMLElement) {
-		var js map[string]interface{}
+		jsonData := []byte(e.Text)
 
-		err := json.Unmarshal([]byte(e.Text), &js)
+		// Validate that the text is actually JSON
+		if !json.Valid(jsonData) {
+			fmt.Println("Error: Extracted text is not valid JSON")
+			return
+		}
+
+		// Create a unique key for the S3 object
+		timestamp := time.Now().Format("2006-01-02T15-04-05")
+		key := fmt.Sprintf("bundle-data-%s.json", timestamp)
+
+		// Upload the JSON file to S3
+		_, err := svc.PutObject(ctx, &s3.PutObjectInput{
+			Bucket:      aws.String(bucketName),
+			Key:         aws.String(key),
+			Body:        bytes.NewReader(jsonData),
+			ContentType: aws.String("application/json"),
+		})
 
 		if err != nil {
-			panic(errors.New("can't parse the data in script#landingPage-json-data"))
+			fmt.Printf("Failed to upload data to S3 bucket '%s' with key '%s': %v\n", bucketName, key, err)
+			return
 		}
 
-		var products = js["data"].(map[string]interface{})["games"].(map[string]interface{})["mosaic"].([]interface{})[0].(map[string]interface{})["products"]
-
-		for _, record := range products.([]interface{}) {
-			var newBundle Bundle
-
-			newBundle.URL = record.(map[string]interface{})["product_url"].(string)
-			newBundle.Title = record.(map[string]interface{})["tile_name"].(string)
-			newBundle.ImageTile = record.(map[string]interface{})["high_res_tile_image"].(string)
-			newBundle.CrawledAt = time.Now().Format("2006-01-02T15:04:05")
-			newBundle.EndDate = record.(map[string]interface{})["end_date|datetime"].(string)
-
-			av, err := dynamodbattribute.MarshalMap(newBundle)
-			if err != nil {
-				fmt.Println(fmt.Println(err))
-			}
-
-			// Create a PutItemInput object.
-			putItemInput := &dynamodb.PutItemInput{
-				TableName: aws.String("humble-data"),
-				Item:      av,
-			}
-
-			// Call the PutItem method of the DynamoDB client.
-			_, err = svc.PutItem(putItemInput)
-
-			if err != nil {
-				fmt.Println(err)
-			}
-		}
+		fmt.Printf("Successfully uploaded data to s3://%s/%s\n", bucketName, key)
 	})
 
 	c.OnRequest(func(r *colly.Request) {
 		fmt.Println("Visiting", r.URL)
 	})
 
-	err = c.Visit(os.Getenv("RSS_FEED_URL"))
-
+	err = c.Visit(feedURL)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Error visiting URL:", err)
 		return err
 	}
 
