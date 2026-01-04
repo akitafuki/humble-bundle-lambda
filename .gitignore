@@ -10,5 +10,10 @@ main.zip
 .settings
 .classpath
 
-#intellij
-.idea
+#vscode
+.vscode
+
+#env files
+aws/
+samconfig.toml
+.aws-sam/
