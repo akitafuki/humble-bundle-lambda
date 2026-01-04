@@ -2,7 +2,7 @@ module captureFeed
 
 go 1.24.0
 
-toolchain go1.25.4
+toolchain go1.25.5
 
 require (
 	github.com/aws/aws-lambda-go v1.51.1
